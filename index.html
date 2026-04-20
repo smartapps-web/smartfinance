@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFinance Pro v3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        #slide-panel { transition: transform 0.3s cubic-bezier(0, 0, 0.2, 1); }
+        .custom-scroll::-webkit-scrollbar { width: 0px; }
+        .active-btn { transform: scale(0.95); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 pb-32">
+
+    <header class="bg-slate-900 text-white p-5 pt-10 rounded-b-[2.5rem] shadow-sm">
+        <div class="max-w-md mx-auto">
+            <div class="flex justify-between items-start mb-5">
+                <div>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Total Kekayaan</p>
+                    <h1 id="total-wealth" class="text-2xl font-extrabold tracking-tight">Rp 0</h1>
+                </div>
+                <button onclick="window.promptUpdateGold()" class="bg-slate-800 border border-slate-700 p-2 px-3 rounded-xl flex items-center gap-2 active:scale-95 transition">
+                    <i class="fa-solid fa-gem text-amber-400 text-xs"></i>
+                    <span id="display-gold-price" class="text-[10px] font-bold">Rp 0</span>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-slate-800/50 border border-white/5 p-3 rounded-2xl text-center">
+                    <p class="text-[9px] text-slate-400 font-bold uppercase">Asset Value</p>
+                    <p id="total-assets" class="font-bold text-sm">Rp 0</p>
+                </div>
+                <div class="bg-slate-800/50 border border-white/5 p-3 rounded-2xl text-center">
+                    <p class="text-[9px] text-slate-400 font-bold uppercase">Income Apr</p>
+                    <p id="monthly-income" class="font-bold text-sm text-emerald-400">Rp 0</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto px-4 mt-6">
+        <label class="w-full bg-white border border-slate-200 p-3 rounded-2xl flex items-center justify-center gap-3 cursor-pointer active:bg-slate-50 transition mb-6 shadow-sm">
+            <i class="fa-solid fa-camera text-blue-500"></i>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-600">Scan & Input Otomatis Struk</span>
+            <input type="file" id="receipt-upload" accept="image/*" capture="camera" class="hidden">
+        </label>
+
+        <div class="flex justify-between items-center mb-4 px-1">
+            <h3 class="font-bold text-[11px] text-slate-400 uppercase tracking-[0.15em]">History Transaksi</h3>
+            <span class="text-[9px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold">Realtime</span>
+        </div>
+
+        <div id="transaction-list" class="space-y-2">
+            </div>
+    </main>
+
+    <div class="fixed bottom-0 left-0 right-0 p-4 pb-8 flex justify-center z-50 pointer-events-none">
+        <nav class="w-[90%] max-w-xs bg-slate-900/90 backdrop-blur-xl rounded-full p-2 flex justify-around items-center shadow-2xl border border-white/10 pointer-events-auto">
+            <button onclick="location.reload()" class="w-10 h-10 flex items-center justify-center text-blue-400">
+                <i class="fa-solid fa-house-simple text-lg"></i>
+            </button>
+            <button class="w-10 h-10 flex items-center justify-center text-slate-400 opacity-50"><i class="fa-solid fa-chart-line text-lg"></i></button>
+            
+            <button onclick="window.openPanel('transaksi')" class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-500/40 transform -translate-y-2 border-4 border-slate-900">
+                <i class="fa-solid fa-plus text-xl"></i>
+            </button>
+            
+            <button class="w-10 h-10 flex items-center justify-center text-slate-400 opacity-50"><i class="fa-solid fa-wallet text-lg"></i></button>
+            <button class="w-10 h-10 flex items-center justify-center text-slate-400 opacity-50"><i class="fa-solid fa-gear text-lg"></i></button>
+        </nav>
+    </div>
+
+    <div id="overlay" class="fixed inset-0 bg-slate-900/60 z-40 hidden opacity-0 transition-all duration-300"></div>
+    <div id="slide-panel" class="fixed bottom-0 left-0 right-0 bg-white z-50 rounded-t-[2.5rem] transform translate-y-full max-w-md mx-auto shadow-2xl max-h-[90vh] overflow-y-auto custom-scroll pb-10">
+        <div class="p-6">
+            <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-6"></div>
+            <h3 id="panel-title" class="text-sm font-black text-slate-800 mb-6 text-center uppercase tracking-widest">Input Data Baru</h3>
+            
+            <div class="space-y-5">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Kategori Utama</label>
+                    <select id="input-category" onchange="window.handleCategoryChange()" class="w-full bg-slate-50 p-4 rounded-2xl border border-slate-100 outline-none font-bold text-blue-600">
+                        <option value="Pengeluaran">🔴 Pengeluaran</option>
+                        <option value="Pemasukan">🟢 Pemasukan</option>
+                        <option value="Aset Baru">💎 Aset Baru</option>
+                    </select>
+                </div>
+
+                <div id="aset-type-section" class="hidden space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Tipe Aset</label>
+                    <select id="input-aset-type" onchange="window.handleAsetTypeChange()" class="w-full bg-blue-50 p-4 rounded-2xl border border-blue-100 outline-none font-bold text-blue-700">
+                        <option value="Lainnya">Lainnya</option>
+                        <option value="Emas">Emas (Semar)</option>
+                        <option value="Tanah">Tanah / Properti</option>
+                        <option value="Mobil">Mobil / Motor</option>
+                    </select>
+                </div>
+
+                <div id="form-emas" class="hidden p-4 bg-amber-50 rounded-2xl border border-amber-100 space-y-3">
+                    <label class="block text-[10px] font-bold text-amber-700 uppercase">Berat Emas (Gram)</label>
+                    <input type="number" id="gold-weight" oninput="window.calcEmas()" class="w-full bg-white p-3 rounded-xl outline-none font-bold text-lg" placeholder="0.00">
+                </div>
+
+                <div id="form-tanah" class="hidden p-4 bg-emerald-50 rounded-2xl border border-emerald-100 space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[10px] font-bold text-emerald-700 uppercase">Panjang (m)</label>
+                            <input type="number" id="land-p" oninput="window.calcTanah()" class="w-full bg-white p-3 rounded-xl outline-none font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-emerald-700 uppercase">Lebar (m)</label>
+                            <input type="number" id="land-l" oninput="window.calcTanah()" class="w-full bg-white p-3 rounded-xl outline-none font-bold">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-emerald-700 uppercase">Harga Per Meter (Rp)</label>
+                        <input type="number" id="land-price" oninput="window.calcTanah()" class="w-full bg-white p-3 rounded-xl outline-none font-bold" placeholder="0">
+                    </div>
+                    <input type="text" id="land-address" class="w-full bg-white p-3 rounded-xl outline-none text-xs" placeholder="Alamat Tanah">
+                </div>
+
+                <div id="form-mobil" class="hidden p-4 bg-slate-100 rounded-2xl border border-slate-200 space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="car-merk" class="bg-white p-3 rounded-xl outline-none text-xs font-bold" placeholder="Merk (Wuling)">
+                        <input type="text" id="car-type" class="bg-white p-3 rounded-xl outline-none text-xs font-bold" placeholder="Tipe (Cloud EV)">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="car-plate" class="bg-white p-3 rounded-xl outline-none text-xs" placeholder="Plat Nomor">
+                        <input type="number" id="car-year" class="bg-white p-3 rounded-xl outline-none text-xs" placeholder="Tahun">
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Keterangan Nama</label>
+                        <input type="text" id="input-name" class="w-full bg-slate-50 p-4 rounded-2xl border border-slate-100 outline-none font-bold">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nominal Akhir (Rp)</label>
+                        <input type="number" id="input-amount" class="w-full bg-slate-900 text-white p-4 rounded-2xl outline-none font-bold text-xl">
+                    </div>
+                </div>
+
+                <div id="preview-container" class="hidden rounded-2xl overflow-hidden border">
+                    <img id="image-preview" src="#" class="w-full h-32 object-cover">
+                </div>
+
+                <div class="pt-4 pb-10">
+                    <button type="button" id="btn-save" onclick="window.saveDataToFirebase()" class="w-full bg-blue-600 text-white font-bold py-5 rounded-3xl active:scale-95 transition uppercase text-xs tracking-[0.2em] shadow-xl">
+                        Simpan Data
+                    </button>
+                    <button type="button" onclick="window.closePanel()" class="w-full text-slate-400 font-bold py-3 text-[10px] uppercase tracking-widest mt-2">Batal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+        import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCDt4yZbOO3oB_kfSlJPWzXCTg8CxZm2Y0",
+            authDomain: "bus-managemen-5fca8.firebaseapp.com",
+            databaseURL: "https://bus-managemen-5fca8-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "bus-managemen-5fca8",
+            storageBucket: "bus-managemen-5fca8.appspot.com",
+            appId: "1:138957839661:web:c2ed7d2ed6670c1e7987a4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const storage = getStorage(app);
+
+        window.currentGoldPrice = parseInt(localStorage.getItem('saved_gold_price')) || 1450000;
+        let selectedFile = null;
+        let currentEditId = null;
+
+        // --- DISPLAY LOGIC ---
+        window.updateGoldDisplay = function() {
+            document.getElementById('display-gold-price').innerText = "Rp " + (window.currentGoldPrice/1000).toFixed(0) + "k/gr";
+            localStorage.setItem('saved_gold_price', window.currentGoldPrice);
+        };
+        window.updateGoldDisplay();
+
+        window.promptUpdateGold = function() {
+            const p = prompt("Harga Emas Semar (Per Gram):", window.currentGoldPrice);
+            if(p) { window.currentGoldPrice = parseInt(p); window.updateGoldDisplay(); }
+        };
+
+        // --- DYNAMIC FORM LOGIC ---
+        window.handleCategoryChange = function() {
+            const cat = document.getElementById('input-category').value;
+            const asetSection = document.getElementById('aset-type-section');
+            if(cat === "Aset Baru") {
+                asetSection.classList.remove('hidden');
+            } else {
+                asetSection.classList.add('hidden');
+                window.hideAllSubForms();
+            }
+        };
+
+        window.hideAllSubForms = function() {
+            document.getElementById('form-emas').classList.add('hidden');
+            document.getElementById('form-tanah').classList.add('hidden');
+            document.getElementById('form-mobil').classList.add('hidden');
+        };
+
+        window.handleAsetTypeChange = function() {
+            const type = document.getElementById('input-aset-type').value;
+            window.hideAllSubForms();
+            if(type === "Emas") document.getElementById('form-emas').classList.remove('hidden');
+            if(type === "Tanah") document.getElementById('form-tanah').classList.remove('hidden');
+            if(type === "Mobil") document.getElementById('form-mobil').classList.remove('hidden');
+        };
+
+        // --- CALCULATIONS ---
+        window.calcEmas = function() {
+            const w = parseFloat(document.getElementById('gold-weight').value) || 0;
+            document.getElementById('input-name').value = `Emas Semar (${w} gr)`;
+            document.getElementById('input-amount').value = w * window.currentGoldPrice;
+        };
+
+        window.calcTanah = function() {
+            const p = parseFloat(document.getElementById('land-p').value) || 0;
+            const l = parseFloat(document.getElementById('land-l').value) || 0;
+            const price = parseFloat(document.getElementById('land-price').value) || 0;
+            const luas = p * l;
+            document.getElementById('input-name').value = `Tanah (${luas} m2)`;
+            document.getElementById('input-amount').value = luas * price;
+        };
+
+        // --- PANEL CONTROL ---
+        window.openPanel = function(type, id = null, data = null) {
+            const panel = document.getElementById('slide-panel');
+            const overlay = document.getElementById('overlay');
+            if(id && data) {
+                currentEditId = id;
+                document.getElementById('input-name').value = data.name;
+                document.getElementById('input-amount').value = data.amount;
+                document.getElementById('input-category').value = data.category;
+            } else {
+                currentEditId = null;
+                document.getElementById('input-category').value = "Pengeluaran";
+                document.getElementById('input-name').value = "";
+                document.getElementById('input-amount').value = "";
+                window.hideAllSubForms();
+                document.getElementById('aset-type-section').classList.add('hidden');
+            }
+            overlay.classList.remove('hidden');
+            setTimeout(() => { overlay.classList.add('opacity-100'); panel.classList.remove('translate-y-full'); }, 50);
+        };
+
+        window.closePanel = function() {
+            document.getElementById('slide-panel').classList.add('translate-y-full');
+            document.getElementById('overlay').classList.remove('opacity-100');
+            setTimeout(() => document.getElementById('overlay').classList.add('hidden'), 300);
+        };
+
+        // --- DATABASE LOGIC ---
+        window.saveDataToFirebase = async function() {
+            const btn = document.getElementById('btn-save');
+            const name = document.getElementById('input-name').value;
+            const amount = parseFloat(document.getElementById('input-amount').value);
+            const category = document.getElementById('input-category').value;
+            const asetType = document.getElementById('input-aset-type').value;
+
+            if(!name || isNaN(amount)) return alert("Data tidak lengkap!");
+            btn.disabled = true; btn.innerText = "Processing...";
+
+            try {
+                let imageUrl = "";
+                if(selectedFile) {
+                    const sRefPath = sRef(storage, `smartkeuangan/img_${Date.now()}`);
+                    const upload = await uploadBytes(sRefPath, selectedFile);
+                    imageUrl = await getDownloadURL(upload.ref);
+                }
+
+                // Simpan detail khusus jika itu aset
+                let detail = {};
+                if(category === "Aset Baru") {
+                    if(asetType === "Tanah") detail = { alamat: document.getElementById('land-address').value };
+                    if(asetType === "Mobil") detail = { 
+                        merk: document.getElementById('car-merk').value, 
+                        plat: document.getElementById('car-plate').value 
+                    };
+                }
+
+                const payload = {
+                    name, amount, category, imageUrl, detail,
+                    timestamp: Date.now(),
+                    waktu: new Date().toLocaleString('id-ID', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})
+                };
+
+                if(currentEditId) await update(ref(db, `smartkeuangan/${currentEditId}`), payload);
+                else await push(ref(db, 'smartkeuangan'), payload);
+
+                selectedFile = null; document.getElementById('preview-container').classList.add('hidden'); window.closePanel();
+            } catch(e) { alert(e.message); } finally { btn.disabled = false; btn.innerText = "SIMPAN DATA"; }
+        };
+
+        window.deleteTransaction = function(id) { if(confirm("Hapus?")) remove(ref(db, `smartkeuangan/${id}`)); };
+
+        onValue(ref(db, 'smartkeuangan'), (snapshot) => {
+            let html = ""; let wealth = 0, assets = 0, income = 0;
+            const data = snapshot.val();
+            if(data) {
+                const items = Object.keys(data).map(k => ({id:k, ...data[k]}));
+                items.sort((a,b) => b.timestamp - a.timestamp);
+                items.forEach(item => {
+                    const isInc = item.category === "Pemasukan";
+                    const isAst = item.category === "Aset Baru";
+                    if(isInc) { wealth += item.amount; income += item.amount; }
+                    else if(isAst) assets += item.amount;
+                    else wealth -= item.amount;
+
+                    html += `
+                    <div class="bg-white p-3 px-4 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 ${isInc?'text-emerald-500 bg-emerald-50':isAst?'text-blue-500 bg-blue-50':'text-rose-500 bg-rose-50'} rounded-xl flex items-center justify-center text-xs">
+                                <i class="fa-solid ${isInc?'fa-arrow-down':isAst?'fa-gem':'fa-receipt'}"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-[12px] text-slate-800 leading-tight">${item.name}</p>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[9px] text-slate-400 font-medium">${item.waktu}</span>
+                                    <button onclick='window.openPanel("edit", "${item.id}", ${JSON.stringify(item)})' class="text-[9px] text-blue-500 font-bold uppercase">Edit</button>
+                                    <button onclick='window.deleteTransaction("${item.id}")' class="text-[9px] text-slate-300 font-bold uppercase">Del</button>
+                                    ${item.imageUrl?`<a href="${item.imageUrl}" target="_blank" class="text-[9px] text-emerald-500 font-bold uppercase underline tracking-tighter">Nota</a>`:''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold ${isInc?'text-emerald-500':isAst?'text-blue-500':'text-slate-700'} text-[13px]">
+                                ${isInc?'+':isAst?'':'–'} ${item.amount.toLocaleString('id-ID')}
+                            </p>
+                        </div>
+                    </div>`;
+                });
+            }
+            document.getElementById('transaction-list').innerHTML = html || '<p class="text-center text-slate-400 py-10 text-[11px]">Belum ada data</p>';
+            document.getElementById('total-wealth').innerText = "Rp " + wealth.toLocaleString('id-ID');
+            document.getElementById('total-assets').innerText = "Rp " + assets.toLocaleString('id-ID');
+            document.getElementById('monthly-income').innerText = "Rp " + income.toLocaleString('id-ID');
+        });
+
+        document.getElementById('receipt-upload').addEventListener('change', (e) => {
+            selectedFile = e.target.files[0];
+            if(selectedFile) {
+                document.getElementById('image-preview').src = URL.createObjectURL(selectedFile);
+                document.getElementById('preview-container').classList.remove('hidden');
+                setTimeout(() => window.openPanel('transaksi'), 500);
+            }
+        });
+        document.getElementById('overlay').onclick = window.closePanel;
+    </script>
+</body>
+</html>
